@@ -1,6 +1,9 @@
+"""Passage extraction and semantic matching layer for PlagiSense."""
+
 import re
 import sys
 from pathlib import Path
+from typing import Any, Dict, List
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
@@ -12,16 +15,16 @@ except ImportError:
     try:
         from .embeddings import encode_passages, batch_semantic_similarity
     except ImportError:
-        from embeddings import encode_passages, batch_semantic_similarity
+        from embeddings import encode_passages, batch_semantic_similarity  # type: ignore
 
 
-def split_into_passages(text: str) -> list:
+def split_into_passages(text: str) -> List[str]:
     """Split text into sentences/passages."""
     if not text:
         return []
         
     passages = re.split(r'(?<=[.!?])\s+', str(text).strip())
-    clean_passages = []
+    clean_passages: List[str] = []
     for p in passages:
         sub_p = [s.strip() for s in p.split('\n') if s.strip()]
         for s in sub_p:
@@ -31,7 +34,7 @@ def split_into_passages(text: str) -> list:
     return clean_passages
 
 
-def find_best_matches(source_text: str, submission_text: str) -> list:
+def find_best_matches(source_text: str, submission_text: str) -> List[Dict[str, Any]]:
     """1. Split documents into passages.
     2. Encode all passages.
     3. For every submission passage, find the best matching source passage based on semantic similarity.
@@ -50,7 +53,7 @@ def find_best_matches(source_text: str, submission_text: str) -> list:
     # Calculate similarity matrix: shape (len(sub_passages), len(source_passages))
     sim_matrix = batch_semantic_similarity(sub_embeddings, source_embeddings)
     
-    matches = []
+    matches: List[Dict[str, Any]] = []
     for i, sub_passage in enumerate(sub_passages):
         if i >= len(sim_matrix):
             break

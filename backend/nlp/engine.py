@@ -1,5 +1,8 @@
+"""Core explainable NLP analysis engine for PlagiSense."""
+
 import sys
 from pathlib import Path
+from typing import Any, Dict, List
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
@@ -19,14 +22,14 @@ except ImportError:
         from .scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
         from .explainer import generate_explanation
     except ImportError:
-        from matcher import find_best_matches
-        from lexical import lexical_similarity
-        from concepts import concept_overlap
-        from scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
-        from explainer import generate_explanation
+        from matcher import find_best_matches  # type: ignore
+        from lexical import lexical_similarity  # type: ignore
+        from concepts import concept_overlap  # type: ignore
+        from scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags  # type: ignore
+        from explainer import generate_explanation  # type: ignore
 
 
-def analyze_documents(source_text: str, submission_text: str) -> dict:
+def analyze_documents(source_text: str, submission_text: str) -> Dict[str, Any]:
     """Main public API for analyzing documents.
     Returns a dictionary with overall risk and passage-level evidence.
     """
@@ -40,7 +43,7 @@ def analyze_documents(source_text: str, submission_text: str) -> dict:
         return _empty_result()
         
     # Analyze matches
-    analyzed_matches = []
+    analyzed_matches: List[Dict[str, Any]] = []
     
     # Configurable semantic threshold to filter out noise
     SEMANTIC_THRESHOLD = 0.50
@@ -104,7 +107,7 @@ def analyze_documents(source_text: str, submission_text: str) -> dict:
     }
 
 
-def _empty_result() -> dict:
+def _empty_result() -> Dict[str, Any]:
     return {
         "overall": {
             "risk_score": 0.0,

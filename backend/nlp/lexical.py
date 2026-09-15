@@ -1,7 +1,10 @@
+"""Lexical similarity calculation for PlagiSense."""
+
 import re
+from typing import Set
 
 
-def tokenize(text: str) -> set:
+def tokenize(text: str) -> Set[str]:
     """Normalize and tokenize text into a set of words."""
     if not text:
         return set()

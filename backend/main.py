@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 import tempfile
 import shutil
+from typing import Any, Dict
 
 # Ensure project root is in sys.path for direct execution
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -22,11 +23,11 @@ try:
     from backend.nlp import analyze_documents
 except ImportError:
     try:
-        from document_parser import SUPPORTED_EXTENSIONS, extract_text_from_file
-        from nlp import analyze_documents
+        from document_parser import SUPPORTED_EXTENSIONS, extract_text_from_file  # type: ignore
+        from nlp import analyze_documents  # type: ignore
     except ImportError:
-        from .document_parser import SUPPORTED_EXTENSIONS, extract_text_from_file
-        from .nlp import analyze_documents
+        from .document_parser import SUPPORTED_EXTENSIONS, extract_text_from_file  # type: ignore
+        from .nlp import analyze_documents  # type: ignore
 
 app = FastAPI(
     title="PlagiSense API",
@@ -52,7 +53,7 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health_check():
+def health_check() -> Dict[str, str]:
     """Health check endpoint to verify backend service status."""
     return {
         "status": "ok",
@@ -64,7 +65,7 @@ def health_check():
 async def analyze_documents_endpoint(
     source_file: UploadFile = File(...),
     submission_file: UploadFile = File(...),
-):
+) -> Dict[str, Any]:
     """Document upload, text extraction, and NLP plagiarism analysis endpoint.
 
     Validates file extensions, extracts text from source and submission documents,

@@ -1,3 +1,8 @@
+"""Scoring, risk level calculation, and evidence flags for PlagiSense."""
+
+from typing import List
+
+
 def calculate_risk_score(semantic: float, lexical: float, concept: float) -> float:
     """Calculate multi-signal risk/evidence score."""
     semantic = float(semantic or 0.0)
@@ -41,14 +46,14 @@ def determine_category(semantic: float, lexical: float, concept: float, paraphra
     return "LOW SIMILARITY"
 
 
-def get_evidence_flags(semantic: float, lexical: float, concept: float, paraphrase_gap: float) -> list:
+def get_evidence_flags(semantic: float, lexical: float, concept: float, paraphrase_gap: float) -> List[str]:
     """Return human-readable bullet points of the strongest evidence signals."""
     semantic = float(semantic or 0.0)
     lexical = float(lexical or 0.0)
     concept = float(concept or 0.0)
     paraphrase_gap = float(paraphrase_gap or 0.0)
 
-    flags = []
+    flags: List[str] = []
     if semantic >= 0.80:
         flags.append("High semantic similarity")
     

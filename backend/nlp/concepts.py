@@ -1,23 +1,26 @@
+"""Concept extraction and semantic concept overlap calculation for PlagiSense."""
+
 import re
 import sys
 from pathlib import Path
+from typing import Dict, Set
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 # A small set of common stop words to exclude from concept extraction
-STOP_WORDS = {
+STOP_WORDS: Set[str] = {
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from",
     "is", "are", "was", "were", "be", "been", "being", "it", "this", "that", "these", "those",
     "he", "she", "they", "we", "i", "you", "my", "your", "their", "our", "his", "hers", "its",
     "can", "could", "would", "should", "may", "might", "must", "do", "does", "did",
     "have", "has", "had", "not", "no", "yes", "how", "what", "where", "when", "why", "who", "which",
-    "as", "if", "then", "else", "than", "so", "because", "while", "also", "who", "remain"
+    "as", "if", "then", "else", "than", "so", "because", "while", "also", "remain"
 }
 
 # A small deterministic normalization dictionary for related terms
-NORMALIZATION_DICT = {
+NORMALIZATION_DICT: Dict[str, str] = {
     "exercise": "physical_activity",
     "exercising": "physical_activity",
     "workout": "physical_activity",
@@ -56,14 +59,14 @@ NORMALIZATION_DICT = {
 }
 
 
-def extract_concepts(text: str) -> set:
+def extract_concepts(text: str) -> Set[str]:
     """Extract concepts from text, ignoring stop words and applying normalization."""
     if not text:
         return set()
     text = str(text).lower()
     tokens = re.findall(r'\b\w+\b', text)
     
-    concepts = set()
+    concepts: Set[str] = set()
     for token in tokens:
         if token not in STOP_WORDS:
             concept = NORMALIZATION_DICT.get(token, token)

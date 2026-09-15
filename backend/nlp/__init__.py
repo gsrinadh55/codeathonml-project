@@ -1,3 +1,5 @@
+"""PlagiSense explainable NLP analysis module."""
+
 import sys
 from pathlib import Path
 
@@ -11,6 +13,6 @@ except ImportError:
     try:
         from .engine import analyze_documents
     except ImportError:
-        from engine import analyze_documents
+        from engine import analyze_documents  # type: ignore
 
 __all__ = ["analyze_documents"]
