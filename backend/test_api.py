@@ -1,16 +1,31 @@
-"""Tests for PlagiSense FastAPI foundation endpoints."""
+"""Tests for PlagiSense FastAPI endpoints including document upload and extraction."""
 
+import io
 import unittest
+import docx
 from fastapi.testclient import TestClient
 
 from backend.main import app
+from backend.test_document_parser import _create_minimal_pdf
 
 
-class TestFastAPIFoundation(unittest.TestCase):
-    """Test suite for FastAPI health check, docs, and CORS configuration."""
+def _create_docx_bytes(paragraphs: list[str]) -> bytes:
+    """Create in-memory DOCX bytes with given paragraphs."""
+    doc = docx.Document()
+    for p in paragraphs:
+        doc.add_paragraph(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
+    """Test suite for FastAPI endpoints: /health, /docs, CORS, and POST /analyze."""
 
     def setUp(self):
         self.client = TestClient(app)
+
+    # --- FOUNDATION ENDPOINT TESTS ---
 
     def test_health_check_endpoint(self):
         """Test GET /health returns 200 OK and expected JSON payload."""
@@ -48,6 +63,177 @@ class TestFastAPIFoundation(unittest.TestCase):
             },
         )
         self.assertEqual(response.headers.get("access-control-allow-origin"), allowed_origin)
+
+    # --- POST /analyze TESTS ---
+
+    def test_analyze_txt_plus_txt(self):
+        """Test POST /analyze with two TXT documents."""
+        source_content = b"Source document content about machine learning and algorithms."
+        sub_content = b"Submission document content about machine learning and algorithms."
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.txt", io.BytesIO(source_content), "text/plain"),
+                "submission_file": ("submission.txt", io.BytesIO(sub_content), "text/plain"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["source_characters"], len(source_content.decode()))
+        self.assertEqual(data["submission_characters"], len(sub_content.decode()))
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_pdf_plus_pdf(self):
+        """Test POST /analyze with two PDF documents."""
+        source_pdf = _create_minimal_pdf(["Source PDF original text page."])
+        sub_pdf = _create_minimal_pdf(["Submission PDF student work page."])
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.pdf", io.BytesIO(source_pdf), "application/pdf"),
+                "submission_file": ("submission.pdf", io.BytesIO(sub_pdf), "application/pdf"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["source_characters"], len("Source PDF original text page."))
+        self.assertEqual(data["submission_characters"], len("Submission PDF student work page."))
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_docx_plus_docx(self):
+        """Test POST /analyze with two DOCX documents."""
+        source_docx = _create_docx_bytes(["Source DOCX paragraph 1.", "Source DOCX paragraph 2."])
+        sub_docx = _create_docx_bytes(["Submission DOCX paragraph 1.", "Submission DOCX paragraph 2."])
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.docx", io.BytesIO(source_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                "submission_file": ("submission.docx", io.BytesIO(sub_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        expected_src_len = len("Source DOCX paragraph 1.\n\nSource DOCX paragraph 2.")
+        expected_sub_len = len("Submission DOCX paragraph 1.\n\nSubmission DOCX paragraph 2.")
+        self.assertEqual(data["source_characters"], expected_src_len)
+        self.assertEqual(data["submission_characters"], expected_sub_len)
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_mixed_pdf_plus_docx(self):
+        """Test POST /analyze with PDF source and DOCX submission."""
+        source_pdf = _create_minimal_pdf(["Source PDF mixed test."])
+        sub_docx = _create_docx_bytes(["Submission DOCX mixed test."])
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.pdf", io.BytesIO(source_pdf), "application/pdf"),
+                "submission_file": ("submission.docx", io.BytesIO(sub_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["source_characters"], len("Source PDF mixed test."))
+        self.assertEqual(data["submission_characters"], len("Submission DOCX mixed test."))
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_mixed_docx_plus_txt(self):
+        """Test POST /analyze with DOCX source and TXT submission."""
+        source_docx = _create_docx_bytes(["Source DOCX mixed test."])
+        sub_txt = b"Submission TXT mixed test."
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.docx", io.BytesIO(source_docx), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                "submission_file": ("submission.txt", io.BytesIO(sub_txt), "text/plain"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["source_characters"], len("Source DOCX mixed test."))
+        self.assertEqual(data["submission_characters"], len(sub_txt.decode()))
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_mixed_txt_plus_pdf(self):
+        """Test POST /analyze with TXT source and PDF submission."""
+        source_txt = b"Source TXT mixed test."
+        sub_pdf = _create_minimal_pdf(["Submission PDF mixed test."])
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.txt", io.BytesIO(source_txt), "text/plain"),
+                "submission_file": ("submission.pdf", io.BytesIO(sub_pdf), "application/pdf"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["source_characters"], len(source_txt.decode()))
+        self.assertEqual(data["submission_characters"], len("Submission PDF mixed test."))
+        self.assertEqual(data["message"], "Documents extracted successfully")
+
+    def test_analyze_unsupported_file_extension(self):
+        """Test POST /analyze rejects unsupported extensions with 400 Bad Request."""
+        valid_txt = b"Valid text content."
+        invalid_img = b"\x89PNG\r\n\x1a\nfakeimage"
+
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.txt", io.BytesIO(valid_txt), "text/plain"),
+                "submission_file": ("image.png", io.BytesIO(invalid_img), "image/png"),
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Unsupported file format", response.json()["detail"])
+
+    def test_analyze_empty_document(self):
+        """Test POST /analyze rejects empty or whitespace-only documents with 400."""
+        valid_txt = b"Valid text content."
+        empty_txt = b"   \n\n  \t "
+
+        # Empty submission
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.txt", io.BytesIO(valid_txt), "text/plain"),
+                "submission_file": ("empty.txt", io.BytesIO(empty_txt), "text/plain"),
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("contains no extractable or usable text", response.json()["detail"])
+
+        # Empty source
+        response_src = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("empty.txt", io.BytesIO(empty_txt), "text/plain"),
+                "submission_file": ("submission.txt", io.BytesIO(valid_txt), "text/plain"),
+            },
+        )
+        self.assertEqual(response_src.status_code, 400)
+        self.assertIn("contains no extractable or usable text", response_src.json()["detail"])
+
+    def test_analyze_missing_upload(self):
+        """Test POST /analyze returns 422 when required upload fields are missing."""
+        valid_txt = b"Valid text content."
+
+        # Missing submission_file
+        response = self.client.post(
+            "/analyze",
+            files={
+                "source_file": ("source.txt", io.BytesIO(valid_txt), "text/plain"),
+            },
+        )
+        self.assertEqual(response.status_code, 422)
+
+        # Missing both files
+        response_both = self.client.post("/analyze")
+        self.assertEqual(response_both.status_code, 422)
 
 
 if __name__ == "__main__":
