@@ -7,7 +7,7 @@ STOP_WORDS = {
     "he", "she", "they", "we", "i", "you", "my", "your", "their", "our", "his", "hers", "its",
     "can", "could", "would", "should", "may", "might", "must", "do", "does", "did",
     "have", "has", "had", "not", "no", "yes", "how", "what", "where", "when", "why", "who", "which",
-    "as", "if", "then", "else", "than", "so", "because", "while"
+    "as", "if", "then", "else", "than", "so", "because", "while", "also", "who", "remain"
 }
 
 # A small deterministic normalization dictionary for related terms
@@ -18,18 +18,39 @@ NORMALIZATION_DICT = {
     "workouts": "physical_activity",
     "active": "physical_activity",
     "activity": "physical_activity",
+    "physical": "physical_activity",
+    "staying": "physical_activity",
     "cardiovascular": "heart_health",
     "cardiac": "heart_health",
     "heart": "heart_health",
     "illness": "disease",
     "sickness": "disease",
-    "survival": "survive"
+    "chronic": "disease",
+    "survival": "survive",
+    "survive": "survive",
+    "healthy": "health",
+    "health": "health",
+    "improves": "benefit",
+    "improve": "benefit",
+    "helps": "benefit",
+    "maintain": "benefit",
+    "better": "benefit",
+    "essential": "need",
+    "need": "need",
+    "humans": "human",
+    "human": "human",
+    "lower": "reduce",
+    "reduce": "reduce",
+    "chance": "risk",
+    "risk": "risk",
+    "concentrate": "concentration",
+    "concentration": "concentration",
+    "frequent": "regular",
+    "regular": "regular"
 }
 
 def extract_concepts(text: str) -> set:
-    """
-    Extract concepts from text, ignoring stop words and applying normalization.
-    """
+    """Extract concepts from text, ignoring stop words and applying normalization."""
     text = text.lower()
     tokens = re.findall(r'\b\w+\b', text)
     
@@ -43,8 +64,7 @@ def extract_concepts(text: str) -> set:
     return concepts
 
 def concept_overlap(text_a: str, text_b: str) -> float:
-    """
-    Calculate the overlap of concepts between two texts using Jaccard similarity
+    """Calculate the overlap of concepts between two texts using Jaccard similarity
     over the extracted concept sets.
     """
     concepts_a = extract_concepts(text_a)

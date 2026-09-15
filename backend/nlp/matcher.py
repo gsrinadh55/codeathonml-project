@@ -1,22 +1,14 @@
 import re
-import numpy as np
 from .embeddings import encode_passages, batch_semantic_similarity
 
 def split_into_passages(text: str) -> list:
-    """
-    Split text into sentences/passages.
-    For this MVP, we use a simple regex split by common sentence terminators.
-    """
+    """Split text into sentences/passages."""
     if not text:
         return []
         
-    # Split by . ! ? optionally followed by whitespace
     passages = re.split(r'(?<=[.!?])\s+', text.strip())
-    # Filter out empty or very short strings that aren't meaningful passages
-    # Also handle newlines if they are used as separators instead of punctuation
     clean_passages = []
     for p in passages:
-        # Also split by newlines for cases without punctuation
         sub_p = [s.strip() for s in p.split('\n') if s.strip()]
         for s in sub_p:
             if len(s) > 2:
@@ -25,8 +17,7 @@ def split_into_passages(text: str) -> list:
     return clean_passages
 
 def find_best_matches(source_text: str, submission_text: str) -> list:
-    """
-    1. Split documents into passages.
+    """1. Split documents into passages.
     2. Encode all passages.
     3. For every submission passage, find the best matching source passage based on semantic similarity.
     Returns a list of dictionaries containing the pairs and their semantic similarity.
@@ -46,8 +37,11 @@ def find_best_matches(source_text: str, submission_text: str) -> list:
     
     matches = []
     for i, sub_passage in enumerate(sub_passages):
-        best_source_idx = np.argmax(sim_matrix[i])
-        best_score = float(sim_matrix[i][best_source_idx])
+        row = sim_matrix[i]
+        if hasattr(row, 'tolist'):
+            row = row.tolist()
+        best_source_idx = max(range(len(row)), key=lambda k: row[k])
+        best_score = float(row[best_source_idx])
         
         matches.append({
             "submission": sub_passage,

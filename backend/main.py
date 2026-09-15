@@ -1,6 +1,6 @@
 """PlagiSense FastAPI backend application.
 
-Provides health check, document upload/extraction testing endpoint,
+Provides health check, document upload/extraction & NLP analysis endpoint,
 API documentation, and CORS configuration for frontend clients.
 """
 
@@ -12,6 +12,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.document_parser import SUPPORTED_EXTENSIONS, extract_text_from_file
+from backend.nlp import analyze_documents
 
 app = FastAPI(
     title="PlagiSense API",
@@ -46,14 +47,14 @@ def health_check():
 
 
 @app.post("/analyze")
-async def analyze_documents(
+async def analyze_documents_endpoint(
     source_file: UploadFile = File(...),
     submission_file: UploadFile = File(...),
 ):
-    """Document upload and extraction test endpoint.
+    """Document upload, text extraction, and NLP plagiarism analysis endpoint.
 
     Validates file extensions, extracts text from source and submission documents,
-    and returns document character counts.
+    and runs the explainable NLP evidence engine.
     """
     # 1. Validate file names and extensions
     source_name = source_file.filename or ""
@@ -129,9 +130,26 @@ async def analyze_documents(
                 detail=f"Submission file '{submission_name}' contains no extractable or usable text.",
             )
 
-    # 5. Return extraction summary
+    # 5. Run NLP engine analysis
+    try:
+        nlp_result = analyze_documents(source_text, submission_text)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error running NLP analysis: {exc}",
+        )
+
+    # 6. Expose the real NLP result with summary fields
+    overall = nlp_result.get("overall", {})
+    matches = nlp_result.get("matches", [])
+
     return {
-        "source_characters": len(source_text),
-        "submission_characters": len(submission_text),
-        "message": "Documents extracted successfully",
+        "overall_score": overall.get("risk_score", 0.0),
+        "overall_risk": overall.get("risk_level", "LOW"),
+        "semantic_similarity": overall.get("semantic_similarity", 0.0),
+        "lexical_similarity": overall.get("lexical_similarity", 0.0),
+        "concept_overlap": overall.get("concept_overlap", 0.0),
+        "suspicious_passages": len(matches),
+        "overall": overall,
+        "matches": matches,
     }

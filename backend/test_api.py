@@ -1,4 +1,4 @@
-"""Tests for PlagiSense FastAPI endpoints including document upload and extraction."""
+"""Tests for PlagiSense FastAPI endpoints including document upload and NLP analysis."""
 
 import io
 import unittest
@@ -20,7 +20,7 @@ def _create_docx_bytes(paragraphs: list[str]) -> bytes:
 
 
 class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
-    """Test suite for FastAPI endpoints: /health, /docs, CORS, and POST /analyze."""
+    """Test suite for FastAPI endpoints: /health, /docs, CORS, and POST /analyze with NLP integration."""
 
     def setUp(self):
         self.client = TestClient(app)
@@ -67,9 +67,9 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
     # --- POST /analyze TESTS ---
 
     def test_analyze_txt_plus_txt(self):
-        """Test POST /analyze with two TXT documents."""
-        source_content = b"Source document content about machine learning and algorithms."
-        sub_content = b"Submission document content about machine learning and algorithms."
+        """Test POST /analyze with two TXT documents returning real NLP analysis."""
+        source_content = b"Regular exercise improves cardiovascular health."
+        sub_content = b"Regular exercise improves cardiovascular health."
 
         response = self.client.post(
             "/analyze",
@@ -80,14 +80,21 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["source_characters"], len(source_content.decode()))
-        self.assertEqual(data["submission_characters"], len(sub_content.decode()))
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
+        self.assertIn("overall_risk", data)
+        self.assertIn("semantic_similarity", data)
+        self.assertIn("lexical_similarity", data)
+        self.assertIn("concept_overlap", data)
+        self.assertIn("suspicious_passages", data)
+        self.assertIn("overall", data)
+        self.assertIn("matches", data)
+        self.assertIsInstance(data["matches"], list)
+        self.assertGreaterEqual(data["overall_score"], 0.8)
 
     def test_analyze_pdf_plus_pdf(self):
         """Test POST /analyze with two PDF documents."""
-        source_pdf = _create_minimal_pdf(["Source PDF original text page."])
-        sub_pdf = _create_minimal_pdf(["Submission PDF student work page."])
+        source_pdf = _create_minimal_pdf(["Regular exercise improves cardiovascular health."])
+        sub_pdf = _create_minimal_pdf(["Frequent physical activity helps maintain a healthy heart."])
 
         response = self.client.post(
             "/analyze",
@@ -98,14 +105,14 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["source_characters"], len("Source PDF original text page."))
-        self.assertEqual(data["submission_characters"], len("Submission PDF student work page."))
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
+        self.assertIn("overall_risk", data)
+        self.assertIn("matches", data)
 
     def test_analyze_docx_plus_docx(self):
         """Test POST /analyze with two DOCX documents."""
-        source_docx = _create_docx_bytes(["Source DOCX paragraph 1.", "Source DOCX paragraph 2."])
-        sub_docx = _create_docx_bytes(["Submission DOCX paragraph 1.", "Submission DOCX paragraph 2."])
+        source_docx = _create_docx_bytes(["Regular exercise improves cardiovascular health."])
+        sub_docx = _create_docx_bytes(["Regular exercise improves cardiovascular health."])
 
         response = self.client.post(
             "/analyze",
@@ -116,16 +123,13 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        expected_src_len = len("Source DOCX paragraph 1.\n\nSource DOCX paragraph 2.")
-        expected_sub_len = len("Submission DOCX paragraph 1.\n\nSubmission DOCX paragraph 2.")
-        self.assertEqual(data["source_characters"], expected_src_len)
-        self.assertEqual(data["submission_characters"], expected_sub_len)
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
+        self.assertIn("overall_risk", data)
 
     def test_analyze_mixed_pdf_plus_docx(self):
         """Test POST /analyze with PDF source and DOCX submission."""
-        source_pdf = _create_minimal_pdf(["Source PDF mixed test."])
-        sub_docx = _create_docx_bytes(["Submission DOCX mixed test."])
+        source_pdf = _create_minimal_pdf(["Regular exercise improves cardiovascular health."])
+        sub_docx = _create_docx_bytes(["Frequent physical activity helps maintain a healthy heart."])
 
         response = self.client.post(
             "/analyze",
@@ -136,14 +140,13 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["source_characters"], len("Source PDF mixed test."))
-        self.assertEqual(data["submission_characters"], len("Submission DOCX mixed test."))
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
+        self.assertIn("overall_risk", data)
 
     def test_analyze_mixed_docx_plus_txt(self):
         """Test POST /analyze with DOCX source and TXT submission."""
-        source_docx = _create_docx_bytes(["Source DOCX mixed test."])
-        sub_txt = b"Submission TXT mixed test."
+        source_docx = _create_docx_bytes(["Regular exercise improves cardiovascular health."])
+        sub_txt = b"The university library closes at eight in the evening."
 
         response = self.client.post(
             "/analyze",
@@ -154,14 +157,13 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["source_characters"], len("Source DOCX mixed test."))
-        self.assertEqual(data["submission_characters"], len(sub_txt.decode()))
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
+        self.assertEqual(data["overall_risk"], "LOW")
 
     def test_analyze_mixed_txt_plus_pdf(self):
         """Test POST /analyze with TXT source and PDF submission."""
-        source_txt = b"Source TXT mixed test."
-        sub_pdf = _create_minimal_pdf(["Submission PDF mixed test."])
+        source_txt = b"Regular exercise improves cardiovascular health."
+        sub_pdf = _create_minimal_pdf(["Regular exercise improves cardiovascular health."])
 
         response = self.client.post(
             "/analyze",
@@ -172,9 +174,7 @@ class TestFastAPIFoundationAndAnalyze(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["source_characters"], len(source_txt.decode()))
-        self.assertEqual(data["submission_characters"], len("Submission PDF mixed test."))
-        self.assertEqual(data["message"], "Documents extracted successfully")
+        self.assertIn("overall_score", data)
 
     def test_analyze_unsupported_file_extension(self):
         """Test POST /analyze rejects unsupported extensions with 400 Bad Request."""
