@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlagiSense — Explainable AI Plagiarism & Paraphrase Detection</title>
+  <meta name="description" content="Next-generation explainable plagiarism and semantic paraphrase detection engine.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-mark">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M10 13l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">PlagiSense</span>
+          <span class="brand-tag">Evidence Engine</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <div class="backend-status" id="backendStatus">
+          <span class="status-dot"></span>
+          <span class="status-label">Backend Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <h1 class="hero-title">Explainable Semantic Plagiarism Detection</h1>
+        <p class="hero-subtitle">
+          Detect exact copies, heavy paraphrasing, and concept alignment across documents (.TXT, .PDF, .DOCX) with passage-level evidence flags.
+        </p>
+      </section>
+
+      <!-- Upload Grid -->
+      <section class="upload-section">
+        <div class="upload-grid">
+          <!-- Source Document -->
+          <div class="upload-card" id="sourceDropzone">
+            <div class="card-header">
+              <span class="card-number">01</span>
+              <h2 class="card-title">Source / Reference Document</h2>
+              <span class="badge">Original</span>
+            </div>
+            <div class="drop-area" id="sourceDropArea">
+              <input type="file" id="sourceFileInput" accept=".txt,.pdf,.docx" class="file-input">
+              <div class="drop-empty" id="sourceEmpty">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="drop-text"><strong>Click to upload</strong> or drag & drop</p>
+                <p class="drop-hint">Supports .TXT, .PDF, .DOCX</p>
+              </div>
+              <div class="file-preview hidden" id="sourcePreview">
+                <div class="file-info">
+                  <span class="file-name" id="sourceFileName">document.pdf</span>
+                  <span class="file-size" id="sourceFileSize">14 KB</span>
+                </div>
+                <button type="button" class="btn-remove" id="sourceRemoveBtn" title="Remove file">&times;</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submission Document -->
+          <div class="upload-card" id="subDropzone">
+            <div class="card-header">
+              <span class="card-number">02</span>
+              <h2 class="card-title">Submission Document</h2>
+              <span class="badge badge-accent">Under Review</span>
+            </div>
+            <div class="drop-area" id="subDropArea">
+              <input type="file" id="subFileInput" accept=".txt,.pdf,.docx" class="file-input">
+              <div class="drop-empty" id="subEmpty">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="drop-text"><strong>Click to upload</strong> or drag & drop</p>
+                <p class="drop-hint">Supports .TXT, .PDF, .DOCX</p>
+              </div>
+              <div class="file-preview hidden" id="subPreview">
+                <div class="file-info">
+                  <span class="file-name" id="subFileName">submission.docx</span>
+                  <span class="file-size" id="subFileSize">22 KB</span>
+                </div>
+                <button type="button" class="btn-remove" id="subRemoveBtn" title="Remove file">&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Demos & Submit -->
+        <div class="action-bar">
+          <div class="demo-samples">
+            <span class="demo-label">Quick Test Scenarios:</span>
+            <button type="button" class="btn-pill" id="demoParaphraseBtn">Heavy Paraphrase</button>
+            <button type="button" class="btn-pill" id="demoExactBtn">Exact Copy</button>
+            <button type="button" class="btn-pill" id="demoUnrelatedBtn">Original Work</button>
+          </div>
+          <button type="button" class="btn-primary" id="analyzeBtn" disabled>
+            <span class="btn-text">Run Plagiarism Analysis</span>
+            <span class="btn-spinner hidden" id="analyzeSpinner"></span>
+          </button>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert-box alert-error hidden" id="errorAlert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="errorMessage">Error text</span>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="results-section hidden" id="resultsSection">
+        <div class="results-header">
+          <h2 class="section-title">Analysis Overview & Multi-Signal Scores</h2>
+          <span class="timestamp" id="resultsTimestamp">Analyzed just now</span>
+        </div>
+
+        <!-- Summary Metric Cards -->
+        <div class="metrics-grid">
+          <!-- Overall Risk Card -->
+          <div class="metric-card card-risk">
+            <div class="metric-header">
+              <span class="metric-title">Overall Risk Score</span>
+              <span class="risk-badge" id="riskLevelBadge">HIGH</span>
+            </div>
+            <div class="risk-value-row">
+              <span class="risk-score-large" id="overallScoreVal">85%</span>
+              <div class="score-progress-bar">
+                <div class="score-progress-fill" id="overallScoreFill" style="width: 85%;"></div>
+              </div>
+            </div>
+            <p class="metric-desc" id="overallScoreDesc">Evidence of significant content correspondence detected.</p>
+          </div>
+
+          <!-- Semantic Similarity Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Semantic Similarity</span>
+              <span class="badge-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/></svg>
+              </span>
+            </div>
+            <div class="metric-number" id="semanticScoreVal">0.92</div>
+            <div class="metric-bar"><div class="metric-bar-fill" id="semanticBarFill" style="width: 92%;"></div></div>
+            <p class="metric-desc">Neural embedding & contextual similarity</p>
+          </div>
+
+          <!-- Lexical Similarity Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Lexical Overlap</span>
+              <span class="badge-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+              </span>
+            </div>
+            <div class="metric-number" id="lexicalScoreVal">0.15</div>
+            <div class="metric-bar"><div class="metric-bar-fill" id="lexicalBarFill" style="width: 15%;"></div></div>
+            <p class="metric-desc">Exact verbatim word & token match ratio</p>
+          </div>
+
+          <!-- Concept Overlap Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-title">Concept Overlap</span>
+              <span class="badge-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </span>
+            </div>
+            <div class="metric-number" id="conceptScoreVal">0.84</div>
+            <div class="metric-bar"><div class="metric-bar-fill" id="conceptBarFill" style="width: 84%;"></div></div>
+            <p class="metric-desc">Normalized key idea & entity overlap</p>
+          </div>
+        </div>
+
+        <!-- Matches & Explainable Evidence -->
+        <div class="matches-container">
+          <div class="matches-header">
+            <h3 class="matches-title">
+              Suspicious Passages (<span id="matchesCount">0</span>)
+            </h3>
+            <span class="matches-note">Ranked by risk score and evidence strength</span>
+          </div>
+
+          <div class="matches-list" id="matchesList">
+            <!-- Dynamic match cards will be rendered here -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>PlagiSense &copy; 2026 — Explainable Semantic Evidence Engine for Academic Integrity.</p>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

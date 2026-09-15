@@ -1,12 +1,26 @@
 import re
-from .embeddings import encode_passages, batch_semantic_similarity
+import sys
+from pathlib import Path
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+try:
+    from backend.nlp.embeddings import encode_passages, batch_semantic_similarity
+except ImportError:
+    try:
+        from .embeddings import encode_passages, batch_semantic_similarity
+    except ImportError:
+        from embeddings import encode_passages, batch_semantic_similarity
+
 
 def split_into_passages(text: str) -> list:
     """Split text into sentences/passages."""
     if not text:
         return []
         
-    passages = re.split(r'(?<=[.!?])\s+', text.strip())
+    passages = re.split(r'(?<=[.!?])\s+', str(text).strip())
     clean_passages = []
     for p in passages:
         sub_p = [s.strip() for s in p.split('\n') if s.strip()]
@@ -15,6 +29,7 @@ def split_into_passages(text: str) -> list:
                 clean_passages.append(s)
                 
     return clean_passages
+
 
 def find_best_matches(source_text: str, submission_text: str) -> list:
     """1. Split documents into passages.
@@ -37,16 +52,20 @@ def find_best_matches(source_text: str, submission_text: str) -> list:
     
     matches = []
     for i, sub_passage in enumerate(sub_passages):
+        if i >= len(sim_matrix):
+            break
         row = sim_matrix[i]
         if hasattr(row, 'tolist'):
             row = row.tolist()
+        if not row:
+            continue
         best_source_idx = max(range(len(row)), key=lambda k: row[k])
-        best_score = float(row[best_source_idx])
-        
-        matches.append({
-            "submission": sub_passage,
-            "source": source_passages[best_source_idx],
-            "semantic_similarity": best_score
-        })
+        if best_source_idx < len(source_passages):
+            best_score = float(row[best_source_idx])
+            matches.append({
+                "submission": sub_passage,
+                "source": source_passages[best_source_idx],
+                "semantic_similarity": best_score
+            })
         
     return matches

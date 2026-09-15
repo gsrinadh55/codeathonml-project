@@ -1,6 +1,5 @@
 def generate_explanation(category: str) -> str:
-    """
-    Generate deterministic explanations based on the similarity category.
+    """Generate deterministic explanations based on the similarity category.
     Explanations avoid claiming definitive plagiarism.
     """
     if category == "HEAVY PARAPHRASE":

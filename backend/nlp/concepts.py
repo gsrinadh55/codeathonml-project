@@ -1,4 +1,10 @@
 import re
+import sys
+from pathlib import Path
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 # A small set of common stop words to exclude from concept extraction
 STOP_WORDS = {
@@ -49,24 +55,32 @@ NORMALIZATION_DICT = {
     "regular": "regular"
 }
 
+
 def extract_concepts(text: str) -> set:
     """Extract concepts from text, ignoring stop words and applying normalization."""
-    text = text.lower()
+    if not text:
+        return set()
+    text = str(text).lower()
     tokens = re.findall(r'\b\w+\b', text)
     
     concepts = set()
     for token in tokens:
         if token not in STOP_WORDS:
-            # Normalize if present in dict, else keep token as the concept
             concept = NORMALIZATION_DICT.get(token, token)
             concepts.add(concept)
     
     return concepts
 
+
 def concept_overlap(text_a: str, text_b: str) -> float:
     """Calculate the overlap of concepts between two texts using Jaccard similarity
     over the extracted concept sets.
     """
+    if not text_a and not text_b:
+        return 1.0
+    if not text_a or not text_b:
+        return 0.0
+
     concepts_a = extract_concepts(text_a)
     concepts_b = extract_concepts(text_b)
     
@@ -78,4 +92,4 @@ def concept_overlap(text_a: str, text_b: str) -> float:
     intersection = concepts_a.intersection(concepts_b)
     union = concepts_a.union(concepts_b)
     
-    return float(len(intersection)) / len(union)
+    return float(len(intersection)) / len(union) if union else 0.0

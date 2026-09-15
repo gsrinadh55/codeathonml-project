@@ -1,16 +1,37 @@
-from .matcher import find_best_matches
-from .lexical import lexical_similarity
-from .concepts import concept_overlap
-from .scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
-from .explainer import generate_explanation
+import sys
+from pathlib import Path
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+try:
+    from backend.nlp.matcher import find_best_matches
+    from backend.nlp.lexical import lexical_similarity
+    from backend.nlp.concepts import concept_overlap
+    from backend.nlp.scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
+    from backend.nlp.explainer import generate_explanation
+except ImportError:
+    try:
+        from .matcher import find_best_matches
+        from .lexical import lexical_similarity
+        from .concepts import concept_overlap
+        from .scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
+        from .explainer import generate_explanation
+    except ImportError:
+        from matcher import find_best_matches
+        from lexical import lexical_similarity
+        from concepts import concept_overlap
+        from scorer import calculate_risk_score, determine_risk_level, determine_category, get_evidence_flags
+        from explainer import generate_explanation
+
 
 def analyze_documents(source_text: str, submission_text: str) -> dict:
-    """
-    Main public API for analyzing documents.
+    """Main public API for analyzing documents.
     Returns a dictionary with overall risk and passage-level evidence.
     """
     # Base cases for empty or near-empty inputs
-    if not source_text or not submission_text or not source_text.strip() or not submission_text.strip():
+    if not source_text or not submission_text or not str(source_text).strip() or not str(submission_text).strip():
         return _empty_result()
         
     # Passage matching
@@ -21,7 +42,6 @@ def analyze_documents(source_text: str, submission_text: str) -> dict:
     # Analyze matches
     analyzed_matches = []
     
-    # SUSPICIOUS MATCH FILTERING
     # Configurable semantic threshold to filter out noise
     SEMANTIC_THRESHOLD = 0.50
     
@@ -63,12 +83,11 @@ def analyze_documents(source_text: str, submission_text: str) -> dict:
         return _empty_result()
         
     # Find the top matches to calculate overall document risk
-    # A sensible MVP approach is to use the strongest passage match as the overall risk score
     strongest_match = max(analyzed_matches, key=lambda x: x["risk_score"])
     overall_score = strongest_match["risk_score"]
     overall_level = determine_risk_level(overall_score)
     
-    # We can average the signals of the suspicious matches for aggregate metrics
+    # Average signals of suspicious matches
     avg_sem = sum(m["semantic_similarity"] for m in analyzed_matches) / len(analyzed_matches)
     avg_lex = sum(m["lexical_similarity"] for m in analyzed_matches) / len(analyzed_matches)
     avg_con = sum(m["concept_overlap"] for m in analyzed_matches) / len(analyzed_matches)
@@ -84,6 +103,7 @@ def analyze_documents(source_text: str, submission_text: str) -> dict:
         "matches": sorted(analyzed_matches, key=lambda x: x["risk_score"], reverse=True)
     }
 
+
 def _empty_result() -> dict:
     return {
         "overall": {
@@ -95,3 +115,12 @@ def _empty_result() -> dict:
         },
         "matches": []
     }
+
+
+if __name__ == "__main__":
+    src = "Regular exercise improves cardiovascular health."
+    sub = "Frequent physical activity helps maintain a healthy heart."
+    res = analyze_documents(src, sub)
+    import json
+    print("NLP Analysis Test Result:")
+    print(json.dumps(res, indent=2))

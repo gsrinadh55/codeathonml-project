@@ -1,30 +1,34 @@
 def calculate_risk_score(semantic: float, lexical: float, concept: float) -> float:
-    """
-    Calculate multi-signal risk/evidence score.
-    This is an engineering heuristic.
-    """
+    """Calculate multi-signal risk/evidence score."""
+    semantic = float(semantic or 0.0)
+    lexical = float(lexical or 0.0)
+    concept = float(concept or 0.0)
     return 0.65 * semantic + 0.20 * lexical + 0.15 * concept
 
+
 def determine_risk_level(score: float) -> str:
-    """
-    Determine risk level based on MVP thresholds.
-    """
+    """Determine risk level based on MVP thresholds."""
+    score = float(score or 0.0)
     if score >= 0.70:
         return "HIGH"
     elif score >= 0.40:
         return "MEDIUM"
     return "LOW"
 
+
 def determine_category(semantic: float, lexical: float, concept: float, paraphrase_gap: float) -> str:
-    """
-    Determine a similarity pattern category based on the signal values.
-    """
+    """Determine a similarity pattern category based on the signal values."""
+    semantic = float(semantic or 0.0)
+    lexical = float(lexical or 0.0)
+    concept = float(concept or 0.0)
+    paraphrase_gap = float(paraphrase_gap or 0.0)
+
     # Exact or close copy
     if semantic >= 0.85 and lexical >= 0.70:
         return "EXACT / CLOSE COPY"
         
     # Heavy paraphrase pattern
-    if semantic >= 0.70 and lexical < 0.45 and concept >= 0.40 and paraphrase_gap >= 0.35:
+    if semantic >= 0.70 and lexical < 0.45 and concept >= 0.40 and paraphrase_gap >= 0.30:
         return "HEAVY PARAPHRASE"
         
     # Fallback to score-based categories
@@ -36,10 +40,14 @@ def determine_category(semantic: float, lexical: float, concept: float, paraphra
         
     return "LOW SIMILARITY"
 
+
 def get_evidence_flags(semantic: float, lexical: float, concept: float, paraphrase_gap: float) -> list:
-    """
-    Return human-readable bullet points of the strongest evidence signals.
-    """
+    """Return human-readable bullet points of the strongest evidence signals."""
+    semantic = float(semantic or 0.0)
+    lexical = float(lexical or 0.0)
+    concept = float(concept or 0.0)
+    paraphrase_gap = float(paraphrase_gap or 0.0)
+
     flags = []
     if semantic >= 0.80:
         flags.append("High semantic similarity")
@@ -52,7 +60,7 @@ def get_evidence_flags(semantic: float, lexical: float, concept: float, paraphra
     if concept >= 0.70:
         flags.append("Strong concept alignment")
         
-    if paraphrase_gap >= 0.40:
+    if paraphrase_gap >= 0.30:
         flags.append("Large paraphrase gap")
         
     return flags
